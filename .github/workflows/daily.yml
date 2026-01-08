@@ -2,8 +2,8 @@ name: Daily Glooko Scraper
 
 on:
   schedule:
-    # Täglich um 6:00 Uhr UTC (7:00 MEZ im Winter, 8:00 MESZ im Sommer)
-    - cron: '0 6 * * *'
+    # Täglich um 8:00 Uhr UTC = 9:00 MEZ (Winter) / 10:00 MESZ (Sommer)
+    - cron: '0 8 * * *'
   
   # Manueller Trigger zum Testen
   workflow_dispatch:
