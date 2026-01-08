@@ -135,6 +135,27 @@ def create_simple_report(all_data):
         dby_tir = dby_glucose.get('time_in_range')
         dby_cv = dby_glucose.get('cv')
 
+    # Datum formatieren (z.B. "Wed, Jan 7th, 2026" -> "Mi, 7. Jan")
+    def format_date_short(date_str):
+        if not date_str:
+            return ""
+        try:
+            # Englische Wochentage zu Deutsch
+            day_map = {"Mon": "Mo", "Tue": "Di", "Wed": "Mi", "Thu": "Do", "Fri": "Fr", "Sat": "Sa", "Sun": "So"}
+            # Parse "Wed, Jan 7th, 2026"
+            import re
+            match = re.match(r'(\w+), (\w+) (\d+)\w*, \d+', date_str)
+            if match:
+                day_en, month, day_num = match.groups()
+                day_de = day_map.get(day_en, day_en)
+                return f"{day_de}, {day_num}. {month}"
+            return date_str
+        except:
+            return date_str
+
+    yesterday_short = format_date_short(yesterday_date)
+    dby_short = format_date_short(dby_date) if dby_date else "Vorgestern"
+
     # === NACHRICHT AUFBAUEN ===
     report = "☀️ <b>Guten Morgen, Heiko!</b>\n\n"
 
@@ -142,37 +163,37 @@ def create_simple_report(all_data):
     motivation = get_motivational_message(yesterday_tir, dby_tir, yesterday_cv)
     report += f"{motivation}\n\n"
 
-    # TIR - Klare Aussage über GESTERN
+    # TIR - Klare Aussage mit Datum
     tir_status = "✅" if float(yesterday_tir or 0) >= 70 else "⚠️" if float(yesterday_tir or 0) >= 50 else "❌"
-    report += f"🎯 Du warst gestern <b>{format_value(yesterday_tir)}%</b> im Zielbereich {tir_status}\n"
+    report += f"🎯 Am <b>{yesterday_short}</b> warst du <b>{format_value(yesterday_tir)}%</b> im Zielbereich {tir_status}\n"
 
     if dby_tir:
         try:
             diff = float(yesterday_tir) - float(dby_tir)
             if diff > 0:
-                report += f"   ↗️ Das sind <b>+{abs(diff):.0f}%</b> mehr als vorgestern ({format_value(dby_tir)}%)\n"
+                report += f"   ↗️ Das sind <b>+{abs(diff):.0f}%</b> mehr als am {dby_short} ({format_value(dby_tir)}%)\n"
             elif diff < 0:
-                report += f"   ↘️ Das sind <b>{abs(diff):.0f}%</b> weniger als vorgestern ({format_value(dby_tir)}%)\n"
+                report += f"   ↘️ Das sind <b>{abs(diff):.0f}%</b> weniger als am {dby_short} ({format_value(dby_tir)}%)\n"
             else:
-                report += f"   ➡️ Gleich wie vorgestern ({format_value(dby_tir)}%)\n"
+                report += f"   ➡️ Gleich wie am {dby_short} ({format_value(dby_tir)}%)\n"
         except:
             pass
 
     report += "\n"
 
-    # CV - Klare Aussage über GESTERN
+    # CV - Klare Aussage mit Datum
     cv_status = "✅" if float(yesterday_cv or 50) <= 36 else "⚠️"
-    report += f"📈 Deine Stabilität (CV) lag bei <b>{format_value(yesterday_cv)}%</b> {cv_status}\n"
+    report += f"📈 Deine Stabilität (CV): <b>{format_value(yesterday_cv)}%</b> {cv_status}\n"
 
     if dby_cv:
         try:
             cv_diff = float(yesterday_cv) - float(dby_cv)
             if abs(cv_diff) < 1:
-                report += f"   ➡️ Ähnlich stabil wie vorgestern\n"
+                report += f"   ➡️ Ähnlich stabil wie am {dby_short}\n"
             elif cv_diff < 0:
-                report += f"   ✨ Stabiler als vorgestern!\n"
+                report += f"   ✨ Stabiler als am {dby_short}!\n"
             else:
-                report += f"   📊 Etwas mehr Schwankungen als vorgestern\n"
+                report += f"   📊 Etwas mehr Schwankungen als am {dby_short}\n"
         except:
             pass
 
