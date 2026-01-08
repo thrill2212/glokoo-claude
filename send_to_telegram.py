@@ -143,22 +143,41 @@ def create_simple_report(all_data):
     motivation = get_motivational_message(today_tir, yesterday_tir, today_cv)
     report += f"{motivation}\n\n"
 
-    # Kompakte Daten-Übersicht
-    report += "📊 <b>Dein Überblick:</b>\n"
-
-    # TIR mit Emoji
+    # TIR - Klare Aussage
     tir_status = "✅" if float(today_tir or 0) >= 70 else "⚠️" if float(today_tir or 0) >= 50 else "❌"
-    report += f"• Zielbereich: <b>{format_value(today_tir)}%</b> {tir_status}"
+    report += f"🎯 Du warst gestern <b>{format_value(today_tir)}%</b> im Zielbereich {tir_status}\n"
+
     if yesterday_tir:
-        report += f" ({tir_emoji}{tir_change})"
+        try:
+            diff = float(today_tir) - float(yesterday_tir)
+            if diff > 0:
+                report += f"   ↗️ Das sind <b>+{abs(diff):.0f}%</b> mehr als vorgestern ({format_value(yesterday_tir)}%)\n"
+            elif diff < 0:
+                report += f"   ↘️ Das sind <b>{abs(diff):.0f}%</b> weniger als vorgestern ({format_value(yesterday_tir)}%)\n"
+            else:
+                report += f"   ➡️ Gleich wie vorgestern ({format_value(yesterday_tir)}%)\n"
+        except:
+            pass
+
     report += "\n"
 
-    # CV mit Emoji
+    # CV - Klare Aussage
     cv_status = "✅" if float(today_cv or 50) <= 36 else "⚠️"
-    report += f"• Stabilität:  <b>{format_value(today_cv)}%</b> {cv_status}"
+    report += f"📈 Deine Blutzucker-Stabilität lag bei <b>{format_value(today_cv)}%</b> {cv_status}\n"
+
     if yesterday_cv:
-        report += f" ({cv_emoji}{cv_change})"
-    report += "\n\n"
+        try:
+            cv_diff = float(today_cv) - float(yesterday_cv)
+            if abs(cv_diff) < 1:
+                report += f"   ➡️ Ähnlich stabil wie vorgestern\n"
+            elif cv_diff < 0:
+                report += f"   ✨ Stabiler als vorgestern!\n"
+            else:
+                report += f"   📊 Etwas mehr Schwankungen als vorgestern\n"
+        except:
+            pass
+
+    report += "\n"
 
     # Tages-Tipp
     tip = get_tip_of_the_day(today_tir, today_cv)
@@ -166,7 +185,7 @@ def create_simple_report(all_data):
         report += f"{tip}\n\n"
 
     # Abschluss
-    report += "🎯 <i>Ziel: TIR ≥70% · CV ≤36%</i>"
+    report += "🎯 <i>Dein Ziel: TIR ≥70% · CV ≤36%</i>"
 
     return report
 
