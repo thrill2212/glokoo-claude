@@ -112,62 +112,61 @@ def get_tip_of_the_day(tir, cv):
 
 
 def create_simple_report(all_data):
-    """Erstellt kompakten, motivierenden Morgenbericht"""
+    """Erstellt kompakten, motivierenden Morgenbericht für GESTERN vs VORGESTERN"""
 
     if not all_data or len(all_data) == 0:
         return "⚠️ Keine Daten verfügbar!"
 
-    # Heute (Index 0)
-    today = all_data[0]
-    today_glucose = today.get('glucose', {})
-    today_tir = today_glucose.get('time_in_range')
-    today_cv = today_glucose.get('cv')
+    # GESTERN (Index 0 = yesterday)
+    yesterday_data = all_data[0]
+    yesterday_date = yesterday_data.get('date', 'Gestern')
+    yesterday_glucose = yesterday_data.get('glucose', {})
+    yesterday_tir = yesterday_glucose.get('time_in_range')
+    yesterday_cv = yesterday_glucose.get('cv')
 
-    # Gestern (Index 1)
-    yesterday_tir = None
-    yesterday_cv = None
+    # VORGESTERN (Index 1 = day_before_yesterday)
+    dby_tir = None
+    dby_cv = None
+    dby_date = None
     if len(all_data) > 1:
-        yesterday = all_data[1]
-        yesterday_glucose = yesterday.get('glucose', {})
-        yesterday_tir = yesterday_glucose.get('time_in_range')
-        yesterday_cv = yesterday_glucose.get('cv')
-
-    # Berechne Veränderung
-    tir_emoji, tir_change = calculate_change(today_tir, yesterday_tir)
-    cv_emoji, cv_change = calculate_change(today_cv, yesterday_cv)
+        dby_data = all_data[1]
+        dby_date = dby_data.get('date', 'Vorgestern')
+        dby_glucose = dby_data.get('glucose', {})
+        dby_tir = dby_glucose.get('time_in_range')
+        dby_cv = dby_glucose.get('cv')
 
     # === NACHRICHT AUFBAUEN ===
     report = "☀️ <b>Guten Morgen, Heiko!</b>\n\n"
 
     # Motivierende Nachricht
-    motivation = get_motivational_message(today_tir, yesterday_tir, today_cv)
+    motivation = get_motivational_message(yesterday_tir, dby_tir, yesterday_cv)
     report += f"{motivation}\n\n"
 
-    # TIR - Klare Aussage
-    tir_status = "✅" if float(today_tir or 0) >= 70 else "⚠️" if float(today_tir or 0) >= 50 else "❌"
-    report += f"🎯 Du warst gestern <b>{format_value(today_tir)}%</b> im Zielbereich {tir_status}\n"
+    # TIR - Klare Aussage über GESTERN
+    tir_status = "✅" if float(yesterday_tir or 0) >= 70 else "⚠️" if float(yesterday_tir or 0) >= 50 else "❌"
+    report += f"🎯 Du warst gestern <b>{format_value(yesterday_tir)}%</b> im Zielbereich {tir_status}\n"
 
-    if yesterday_tir:
+    if dby_tir:
         try:
-            diff = float(today_tir) - float(yesterday_tir)
+            diff = float(yesterday_tir) - float(dby_tir)
             if diff > 0:
-                report += f"   ↗️ Das sind <b>+{abs(diff):.0f}%</b> mehr als vorgestern ({format_value(yesterday_tir)}%)\n"
+                report += f"   ↗️ Das sind <b>+{abs(diff):.0f}%</b> mehr als vorgestern ({format_value(dby_tir)}%)\n"
             elif diff < 0:
-                report += f"   ↘️ Das sind <b>{abs(diff):.0f}%</b> weniger als vorgestern ({format_value(yesterday_tir)}%)\n"
+                report += f"   ↘️ Das sind <b>{abs(diff):.0f}%</b> weniger als vorgestern ({format_value(dby_tir)}%)\n"
             else:
-                report += f"   ➡️ Gleich wie vorgestern ({format_value(yesterday_tir)}%)\n"
+                report += f"   ➡️ Gleich wie vorgestern ({format_value(dby_tir)}%)\n"
         except:
             pass
 
     report += "\n"
 
-    # CV - Klare Aussage
-    cv_status = "✅" if float(today_cv or 50) <= 36 else "⚠️"
-    report += f"📈 Deine Blutzucker-Stabilität lag bei <b>{format_value(today_cv)}%</b> {cv_status}\n"
+    # CV - Klare Aussage über GESTERN
+    cv_status = "✅" if float(yesterday_cv or 50) <= 36 else "⚠️"
+    report += f"📈 Deine Stabilität (CV) lag bei <b>{format_value(yesterday_cv)}%</b> {cv_status}\n"
 
-    if yesterday_cv:
+    if dby_cv:
         try:
-            cv_diff = float(today_cv) - float(yesterday_cv)
+            cv_diff = float(yesterday_cv) - float(dby_cv)
             if abs(cv_diff) < 1:
                 report += f"   ➡️ Ähnlich stabil wie vorgestern\n"
             elif cv_diff < 0:
@@ -180,7 +179,7 @@ def create_simple_report(all_data):
     report += "\n"
 
     # Tages-Tipp
-    tip = get_tip_of_the_day(today_tir, today_cv)
+    tip = get_tip_of_the_day(yesterday_tir, yesterday_cv)
     if tip:
         report += f"{tip}\n\n"
 

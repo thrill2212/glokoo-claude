@@ -519,37 +519,50 @@ def main():
             return False
         
         set_timeframe_to_one_day(page)
-        
+
         page.screenshot(path="debug_dashboard_main.png")
         print(f"✓ Dashboard-Screenshot")
-        
-        print(f"\n→ Sammle Daten für {DAYS_TO_SCRAPE} Tage...\n")
-        
+
+        # WICHTIG: Morgens sind die Daten von "heute" noch unvollständig!
+        # Wir wollen GESTERN (vollständig) und VORGESTERN (zum Vergleich)
+        # Also: Zuerst einen Tag zurück navigieren!
+
+        print("\n→ Navigiere zu GESTERN (für vollständige Daten)...")
+        if not navigate_to_previous_day(page):
+            print("⚠ Navigation zu gestern fehlgeschlagen")
+        time.sleep(3)
+
+        print(f"\n→ Sammle Daten: GESTERN + VORGESTERN...\n")
+
+        day_labels = ["yesterday", "day_before_yesterday"]
+
         for day in range(DAYS_TO_SCRAPE):
-            print(f"=== Tag {day + 1}/{DAYS_TO_SCRAPE} ===")
-            
+            label = day_labels[day] if day < len(day_labels) else f"day_{day}"
+            print(f"=== {label.upper()} ({day + 1}/{DAYS_TO_SCRAPE}) ===")
+
             current_date = get_current_date_from_page(page)
             glucose = scrape_glucose_data(page)
             insulin = scrape_insulin_data(page)
-            
+
             day_data = {
                 'date': current_date,
+                'label': label,
                 'day_index': day,
                 'glucose': glucose,
                 'insulin': insulin,
                 'scraped_at': datetime.now().isoformat()
             }
-            
+
             all_data.append(day_data)
-            page.screenshot(path=f"debug_day_{day}.png")
-            
+            page.screenshot(path=f"debug_{label}.png")
+
             if day < DAYS_TO_SCRAPE - 1:
                 if not navigate_to_previous_day(page):
                     print("Navigation fehlgeschlagen, breche ab")
                     break
-            
+
             print()
-        
+
         browser.close()
     
     output_file = "glooko_data.json"
