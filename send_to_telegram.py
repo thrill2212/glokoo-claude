@@ -49,81 +49,112 @@ def format_value(value):
         return str(value)
 
 def create_simple_report(all_data):
-    """Erstellt vereinfachten Bericht mit nur TIR und CV"""
-    
+    """Erstellt Bericht mit Daten fuer Heute und Gestern"""
+
     if not all_data or len(all_data) == 0:
         return "⚠️ Keine Daten verfuegbar!"
-    
+
     # Heute (neueste Daten = Index 0)
     today = all_data[0]
     today_date = today.get('date', 'Heute')
     today_glucose = today.get('glucose', {})
-    
     today_tir = today_glucose.get('time_in_range')
     today_cv = today_glucose.get('cv')
-    
+
     # Gestern (falls vorhanden = Index 1)
+    yesterday = None
+    yesterday_date = None
     yesterday_tir = None
     yesterday_cv = None
-    
+
     if len(all_data) > 1:
         yesterday = all_data[1]
+        yesterday_date = yesterday.get('date', 'Gestern')
         yesterday_glucose = yesterday.get('glucose', {})
         yesterday_tir = yesterday_glucose.get('time_in_range')
         yesterday_cv = yesterday_glucose.get('cv')
-    
+
     # Bericht erstellen
-    report = f"📊 <b>Diabetes Update - {today_date}</b>\n\n"
-    
-    # Time in Range (Zielbereich)
-    tir_emoji, tir_change = calculate_change(today_tir, yesterday_tir)
-    report += f"🎯 <b>Zeit im Zielbereich (TIR):</b>\n"
-    report += f"   • Heute: <b>{format_value(today_tir)}%</b>\n"
-    
-    if yesterday_tir:
-        report += f"   • Gestern: {format_value(yesterday_tir)}%\n"
-        report += f"   • Veraenderung: {tir_emoji} <i>{tir_change}</i>\n"
-    
-    report += "\n"
-    
-    # CV (Variationskoeffizient)
-    cv_emoji, cv_change = calculate_change(today_cv, yesterday_cv)
-    report += f"📊 <b>Variationskoeffizient (CV):</b>\n"
-    report += f"   • Heute: <b>{format_value(today_cv)}%</b>\n"
-    
-    if yesterday_cv:
-        report += f"   • Gestern: {format_value(yesterday_cv)}%\n"
-        report += f"   • Veraenderung: {cv_emoji} <i>{cv_change}</i>\n"
-    
-    report += "\n"
-    
-    # Interpretation
-    report += "💡 <b>Bewertung:</b>\n"
-    
-    # TIR Bewertung
+    report = "📊 <b>Glooko Tagesbericht</b>\n"
+    report += "━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    # === HEUTE ===
+    report += f"📅 <b>HEUTE</b> ({today_date})\n"
+    report += "┌─────────────────────\n"
+    report += f"│ 🎯 TIR:  <b>{format_value(today_tir)}%</b>"
+
+    # TIR Bewertung inline
     try:
         tir_val = float(today_tir) if today_tir else 0
         if tir_val >= 70:
-            report += "   • TIR: ✅ Sehr gut (≥70%)\n"
+            report += " ✅\n"
         elif tir_val >= 50:
-            report += "   • TIR: ⚠️ Ausbaufaehig (50-70%)\n"
+            report += " ⚠️\n"
         else:
-            report += "   • TIR: ⚠️ Verbesserungsbedarf (<50%)\n"
+            report += " ❌\n"
     except:
-        pass
-    
-    # CV Bewertung
+        report += "\n"
+
+    report += f"│ 📈 CV:   <b>{format_value(today_cv)}%</b>"
+
+    # CV Bewertung inline
     try:
         cv_val = float(today_cv) if today_cv else 0
         if cv_val <= 36:
-            report += "   • CV: ✅ Stabil (≤36%)\n"
+            report += " ✅\n"
         else:
-            report += "   • CV: ⚠️ Hoehere Variabilitaet (>36%)\n"
+            report += " ⚠️\n"
     except:
-        pass
-    
-    report += "\n💬 <i>Du kannst Fragen zu deinen Daten stellen!</i>"
-    
+        report += "\n"
+
+    report += "└─────────────────────\n\n"
+
+    # === GESTERN ===
+    if yesterday:
+        report += f"📅 <b>GESTERN</b> ({yesterday_date})\n"
+        report += "┌─────────────────────\n"
+        report += f"│ 🎯 TIR:  <b>{format_value(yesterday_tir)}%</b>"
+
+        try:
+            tir_val = float(yesterday_tir) if yesterday_tir else 0
+            if tir_val >= 70:
+                report += " ✅\n"
+            elif tir_val >= 50:
+                report += " ⚠️\n"
+            else:
+                report += " ❌\n"
+        except:
+            report += "\n"
+
+        report += f"│ 📈 CV:   <b>{format_value(yesterday_cv)}%</b>"
+
+        try:
+            cv_val = float(yesterday_cv) if yesterday_cv else 0
+            if cv_val <= 36:
+                report += " ✅\n"
+            else:
+                report += " ⚠️\n"
+        except:
+            report += "\n"
+
+        report += "└─────────────────────\n\n"
+
+    # === VERGLEICH ===
+    if yesterday_tir and today_tir:
+        report += "📊 <b>VERGLEICH</b>\n"
+        report += "┌─────────────────────\n"
+
+        tir_emoji, tir_change = calculate_change(today_tir, yesterday_tir)
+        cv_emoji, cv_change = calculate_change(today_cv, yesterday_cv)
+
+        report += f"│ TIR: {tir_emoji} {tir_change}\n"
+        report += f"│ CV:  {cv_emoji} {cv_change}\n"
+        report += "└─────────────────────\n\n"
+
+    # === BEWERTUNG ===
+    report += "💡 <b>Zielwerte:</b>\n"
+    report += "• TIR ≥70% = ✅ | CV ≤36% = ✅\n"
+
     return report
 
 def create_weekly_summary(all_data):
