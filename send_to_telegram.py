@@ -48,112 +48,125 @@ def format_value(value):
     except:
         return str(value)
 
+def get_motivational_message(tir_today, tir_yesterday, cv_today):
+    """Generiert eine motivierende Nachricht basierend auf den Werten"""
+    try:
+        tir = float(tir_today) if tir_today else 0
+        tir_prev = float(tir_yesterday) if tir_yesterday else tir
+        cv = float(cv_today) if cv_today else 50
+        diff = tir - tir_prev
+
+        # Sehr guter Tag
+        if tir >= 80 and cv <= 33:
+            return "🌟 Fantastischer Tag! Weiter so, du machst das großartig!"
+        # Guter Tag
+        elif tir >= 70:
+            if diff > 5:
+                return "💪 Super Verbesserung! Dein Einsatz zahlt sich aus!"
+            else:
+                return "👍 Solider Tag im Zielbereich. Gut gemacht!"
+        # Okay Tag mit Verbesserung
+        elif tir >= 50 and diff > 0:
+            return "📈 Es geht aufwärts! Jeder Schritt zählt."
+        # Schwieriger Tag
+        elif tir < 50:
+            return "🤗 Nicht jeder Tag ist perfekt - morgen wird besser!"
+        # Rückgang
+        elif diff < -10:
+            return "💡 Kleiner Rückschritt, aber du schaffst das! Fokus auf heute."
+        else:
+            return "☀️ Neuer Tag, neue Chance! Du hast es in der Hand."
+    except:
+        return "☀️ Guten Morgen! Mach das Beste aus dem Tag!"
+
+
+def get_tip_of_the_day(tir, cv):
+    """Gibt einen passenden Tipp basierend auf den Werten"""
+    try:
+        tir_val = float(tir) if tir else 0
+        cv_val = float(cv) if cv else 50
+
+        if cv_val > 40:
+            tips = [
+                "💡 Tipp: Regelmäßige Mahlzeiten helfen, Schwankungen zu reduzieren.",
+                "💡 Tipp: Achte auf versteckte Kohlenhydrate in Getränken.",
+                "💡 Tipp: Bewegung nach dem Essen kann Spitzen abflachen."
+            ]
+        elif tir_val < 60:
+            tips = [
+                "💡 Tipp: Überprüfe deine Basalrate mit deinem Arzt.",
+                "💡 Tipp: Führe ein Ernährungstagebuch für 3 Tage.",
+                "💡 Tipp: Stress kann den Blutzucker beeinflussen - gönn dir Pausen."
+            ]
+        else:
+            tips = [
+                "💡 Tipp: Bleib dran - Konstanz ist der Schlüssel!",
+                "💡 Tipp: Genug Schlaf hilft bei der Blutzuckerkontrolle.",
+                "💡 Tipp: Feiere deine Erfolge, auch die kleinen!"
+            ]
+
+        import random
+        return random.choice(tips)
+    except:
+        return ""
+
+
 def create_simple_report(all_data):
-    """Erstellt Bericht mit Daten fuer Heute und Gestern"""
+    """Erstellt kompakten, motivierenden Morgenbericht"""
 
     if not all_data or len(all_data) == 0:
-        return "⚠️ Keine Daten verfuegbar!"
+        return "⚠️ Keine Daten verfügbar!"
 
-    # Heute (neueste Daten = Index 0)
+    # Heute (Index 0)
     today = all_data[0]
-    today_date = today.get('date', 'Heute')
     today_glucose = today.get('glucose', {})
     today_tir = today_glucose.get('time_in_range')
     today_cv = today_glucose.get('cv')
 
-    # Gestern (falls vorhanden = Index 1)
-    yesterday = None
-    yesterday_date = None
+    # Gestern (Index 1)
     yesterday_tir = None
     yesterday_cv = None
-
     if len(all_data) > 1:
         yesterday = all_data[1]
-        yesterday_date = yesterday.get('date', 'Gestern')
         yesterday_glucose = yesterday.get('glucose', {})
         yesterday_tir = yesterday_glucose.get('time_in_range')
         yesterday_cv = yesterday_glucose.get('cv')
 
-    # Bericht erstellen
-    report = "📊 <b>Glooko Tagesbericht</b>\n"
-    report += "━━━━━━━━━━━━━━━━━━━━━\n\n"
+    # Berechne Veränderung
+    tir_emoji, tir_change = calculate_change(today_tir, yesterday_tir)
+    cv_emoji, cv_change = calculate_change(today_cv, yesterday_cv)
 
-    # === HEUTE ===
-    report += f"📅 <b>HEUTE</b> ({today_date})\n"
-    report += "┌─────────────────────\n"
-    report += f"│ 🎯 TIR:  <b>{format_value(today_tir)}%</b>"
+    # === NACHRICHT AUFBAUEN ===
+    report = "☀️ <b>Guten Morgen, Heiko!</b>\n\n"
 
-    # TIR Bewertung inline
-    try:
-        tir_val = float(today_tir) if today_tir else 0
-        if tir_val >= 70:
-            report += " ✅\n"
-        elif tir_val >= 50:
-            report += " ⚠️\n"
-        else:
-            report += " ❌\n"
-    except:
-        report += "\n"
+    # Motivierende Nachricht
+    motivation = get_motivational_message(today_tir, yesterday_tir, today_cv)
+    report += f"{motivation}\n\n"
 
-    report += f"│ 📈 CV:   <b>{format_value(today_cv)}%</b>"
+    # Kompakte Daten-Übersicht
+    report += "📊 <b>Dein Überblick:</b>\n"
 
-    # CV Bewertung inline
-    try:
-        cv_val = float(today_cv) if today_cv else 0
-        if cv_val <= 36:
-            report += " ✅\n"
-        else:
-            report += " ⚠️\n"
-    except:
-        report += "\n"
+    # TIR mit Emoji
+    tir_status = "✅" if float(today_tir or 0) >= 70 else "⚠️" if float(today_tir or 0) >= 50 else "❌"
+    report += f"• Zielbereich: <b>{format_value(today_tir)}%</b> {tir_status}"
+    if yesterday_tir:
+        report += f" ({tir_emoji}{tir_change})"
+    report += "\n"
 
-    report += "└─────────────────────\n\n"
+    # CV mit Emoji
+    cv_status = "✅" if float(today_cv or 50) <= 36 else "⚠️"
+    report += f"• Stabilität:  <b>{format_value(today_cv)}%</b> {cv_status}"
+    if yesterday_cv:
+        report += f" ({cv_emoji}{cv_change})"
+    report += "\n\n"
 
-    # === GESTERN ===
-    if yesterday:
-        report += f"📅 <b>GESTERN</b> ({yesterday_date})\n"
-        report += "┌─────────────────────\n"
-        report += f"│ 🎯 TIR:  <b>{format_value(yesterday_tir)}%</b>"
+    # Tages-Tipp
+    tip = get_tip_of_the_day(today_tir, today_cv)
+    if tip:
+        report += f"{tip}\n\n"
 
-        try:
-            tir_val = float(yesterday_tir) if yesterday_tir else 0
-            if tir_val >= 70:
-                report += " ✅\n"
-            elif tir_val >= 50:
-                report += " ⚠️\n"
-            else:
-                report += " ❌\n"
-        except:
-            report += "\n"
-
-        report += f"│ 📈 CV:   <b>{format_value(yesterday_cv)}%</b>"
-
-        try:
-            cv_val = float(yesterday_cv) if yesterday_cv else 0
-            if cv_val <= 36:
-                report += " ✅\n"
-            else:
-                report += " ⚠️\n"
-        except:
-            report += "\n"
-
-        report += "└─────────────────────\n\n"
-
-    # === VERGLEICH ===
-    if yesterday_tir and today_tir:
-        report += "📊 <b>VERGLEICH</b>\n"
-        report += "┌─────────────────────\n"
-
-        tir_emoji, tir_change = calculate_change(today_tir, yesterday_tir)
-        cv_emoji, cv_change = calculate_change(today_cv, yesterday_cv)
-
-        report += f"│ TIR: {tir_emoji} {tir_change}\n"
-        report += f"│ CV:  {cv_emoji} {cv_change}\n"
-        report += "└─────────────────────\n\n"
-
-    # === BEWERTUNG ===
-    report += "💡 <b>Zielwerte:</b>\n"
-    report += "• TIR ≥70% = ✅ | CV ≤36% = ✅\n"
+    # Abschluss
+    report += "🎯 <i>Ziel: TIR ≥70% · CV ≤36%</i>"
 
     return report
 
