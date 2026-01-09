@@ -282,40 +282,58 @@ def create_weekly_summary(all_data):
     
     return report
 
+def load_history_for_comparison():
+    """Lädt die letzten 2 Einträge aus der History-CSV für den Vergleich"""
+    csv_file = "glooko_history.csv"
+
+    if not os.path.exists(csv_file):
+        return []
+
+    entries = []
+    with open(csv_file, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        # Überspringe Header, nimm letzte 2 Zeilen
+        data_lines = [l.strip() for l in lines[1:] if l.strip()]
+        for line in data_lines[-2:]:  # Letzte 2 Einträge
+            parts = line.split(',')
+            if len(parts) >= 4:
+                entries.append({
+                    'date': parts[0],
+                    'tir': parts[1],
+                    'cv': parts[2],
+                    'scraped_at': parts[3]
+                })
+
+    return entries
+
+
 def main():
     print("Starte Telegram-Versand...")
-    
-    # JSON-Datei laden
-    json_file = "glooko_data.json"
-    
-    if not os.path.exists(json_file):
-        send_to_telegram("⚠️ <b>Fehler:</b> Keine Daten gefunden!")
-        print("!!! JSON-Datei nicht gefunden !!!")
-        return False
-    
-    with open(json_file, 'r', encoding='utf-8') as f:
-        all_data = json.load(f)
-    
-    print(f"✓ {len(all_data)} Tage geladen")
-    
+
+    # Versuche History-CSV zu laden (für Vergleich)
+    all_data = load_history_for_comparison()
+
+    # Fallback: JSON-Datei laden
+    if not all_data:
+        json_file = "glooko_data.json"
+        if os.path.exists(json_file):
+            with open(json_file, 'r', encoding='utf-8') as f:
+                all_data = json.load(f)
+
+    print(f"✓ {len(all_data)} Einträge geladen")
+
     if not all_data:
         send_to_telegram("⚠️ Keine Daten zum Senden!")
         return False
-    
-    # Tages-Bericht (Heute vs. Gestern)
+
+    # Für den Bericht: Neuester Eintrag zuerst
+    all_data = list(reversed(all_data))
+
+    # Tages-Bericht
     daily_report = create_simple_report(all_data)
     send_to_telegram(daily_report)
     print("✓ Tagesbericht gesendet")
-    
-    # Wochen-Zusammenfassung (falls genug Daten vorhanden)
-    if len(all_data) >= 3:
-        weekly_report = create_weekly_summary(all_data)
-        if weekly_report:
-            # Trennlinie
-            send_to_telegram("─" * 30)
-            send_to_telegram(weekly_report)
-            print("✓ Wochenzusammenfassung gesendet")
-    
+
     print("✓ Alle Daten erfolgreich gesendet!")
     return True
 

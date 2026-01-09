@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 EMAIL = os.getenv("GLOOKO_EMAIL")
 PASSWORT = os.getenv("GLOOKO_PASSWORD")
 URL_LOGIN = "https://my.glooko.com/users/sign_in"
-DAYS_TO_SCRAPE = 2  # Heute + Gestern
+DAYS_TO_SCRAPE = 1  # Nur aktueller Tag (wird um 23:50 gescraped)
 # ────────────────────────────────────────────────
 
 def login_to_glooko(page):
@@ -523,61 +523,48 @@ def main():
         page.screenshot(path="debug_dashboard_main.png")
         print(f"✓ Dashboard-Screenshot")
 
-        # Navigiere zu GESTERN (vollständige Daten)
-        print("\n→ Navigiere zu GESTERN...")
-        if not navigate_to_previous_day(page):
-            print("⚠ Navigation zu gestern fehlgeschlagen")
-        time.sleep(3)
+        # Um 23:50 scrapen wir den AKTUELLEN Tag (keine Navigation nötig)
+        print(f"\n→ Scrape aktuellen Tag...\n")
 
-        # Sammle Daten für GESTERN und VORGESTERN
-        print(f"\n→ Sammle Daten...\n")
+        current_date = get_current_date_from_page(page)
+        glucose = scrape_glucose_data(page)
 
-        day_labels = ["yesterday", "day_before_yesterday"]
+        day_data = {
+            'date': current_date,
+            'label': 'today',
+            'tir': glucose.get('time_in_range', ''),
+            'cv': glucose.get('cv', ''),
+            'scraped_at': datetime.now().isoformat()
+        }
 
-        for day in range(DAYS_TO_SCRAPE):
-            label = day_labels[day] if day < len(day_labels) else f"day_{day}"
-            print(f"=== {label.upper()} ===")
+        all_data.append(day_data)
+        page.screenshot(path="debug_today.png")
 
-            current_date = get_current_date_from_page(page)
-            glucose = scrape_glucose_data(page)
-
-            day_data = {
-                'date': current_date,
-                'label': label,
-                'tir': glucose.get('time_in_range', ''),
-                'cv': glucose.get('cv', ''),
-                'scraped_at': datetime.now().isoformat()
-            }
-
-            all_data.append(day_data)
-            page.screenshot(path=f"debug_{label}.png")
-
-            if day < DAYS_TO_SCRAPE - 1:
-                if not navigate_to_previous_day(page):
-                    print("Navigation fehlgeschlagen, breche ab")
-                    break
-
-            print()
-
+        print()
         browser.close()
     
-    # JSON speichern
+    # JSON speichern (aktueller Tag)
     output_file = "glooko_data.json"
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(all_data, f, indent=2, ensure_ascii=False)
 
-    # CSV-Tabelle speichern
-    csv_file = "glooko_data.csv"
-    with open(csv_file, 'w', encoding='utf-8') as f:
-        f.write("Datum,Label,TIR (%),CV (%),Gescraped am\n")
+    # CSV-Tabelle: Neue Zeile ANHÄNGEN (History aufbauen)
+    csv_file = "glooko_history.csv"
+    file_exists = os.path.exists(csv_file)
+
+    with open(csv_file, 'a', encoding='utf-8') as f:
+        # Header nur wenn Datei neu ist
+        if not file_exists:
+            f.write("Datum,TIR (%),CV (%),Gescraped am\n")
+        # Neue Zeile anhängen
         for entry in all_data:
-            f.write(f"{entry['date']},{entry['label']},{entry['tir']},{entry['cv']},{entry['scraped_at']}\n")
+            f.write(f"{entry['date']},{entry['tir']},{entry['cv']},{entry['scraped_at']}\n")
 
-    print(f"\n✓✓✓ {len(all_data)} Tage gescraped!")
+    print(f"\n✓✓✓ Daten gescraped!")
     print(f"✓ JSON: {output_file}")
-    print(f"✓ CSV:  {csv_file}")
+    print(f"✓ CSV:  {csv_file} (Zeile angehängt)")
 
-    # Tabelle anzeigen
+    # Aktuelle Daten anzeigen
     print("\n┌─────────────────────────┬───────────┬───────────┐")
     print("│ Datum                   │ TIR (%)   │ CV (%)    │")
     print("├─────────────────────────┼───────────┼───────────┤")
