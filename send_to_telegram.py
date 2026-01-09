@@ -120,9 +120,13 @@ def create_simple_report(all_data):
     # GESTERN (Index 0 = yesterday)
     yesterday_data = all_data[0]
     yesterday_date = yesterday_data.get('date', 'Gestern')
-    yesterday_glucose = yesterday_data.get('glucose', {})
-    yesterday_tir = yesterday_glucose.get('time_in_range')
-    yesterday_cv = yesterday_glucose.get('cv')
+    # Unterstütze beide Formate (alt: glucose.time_in_range, neu: tir)
+    if 'glucose' in yesterday_data:
+        yesterday_tir = yesterday_data['glucose'].get('time_in_range')
+        yesterday_cv = yesterday_data['glucose'].get('cv')
+    else:
+        yesterday_tir = yesterday_data.get('tir')
+        yesterday_cv = yesterday_data.get('cv')
 
     # VORGESTERN (Index 1 = day_before_yesterday)
     dby_tir = None
@@ -131,9 +135,12 @@ def create_simple_report(all_data):
     if len(all_data) > 1:
         dby_data = all_data[1]
         dby_date = dby_data.get('date', 'Vorgestern')
-        dby_glucose = dby_data.get('glucose', {})
-        dby_tir = dby_glucose.get('time_in_range')
-        dby_cv = dby_glucose.get('cv')
+        if 'glucose' in dby_data:
+            dby_tir = dby_data['glucose'].get('time_in_range')
+            dby_cv = dby_data['glucose'].get('cv')
+        else:
+            dby_tir = dby_data.get('tir')
+            dby_cv = dby_data.get('cv')
 
     # Datum formatieren (z.B. "Wed, Jan 7th, 2026" -> "Mi, 7. Jan")
     def format_date_short(date_str):

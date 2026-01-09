@@ -523,33 +523,29 @@ def main():
         page.screenshot(path="debug_dashboard_main.png")
         print(f"✓ Dashboard-Screenshot")
 
-        # WICHTIG: Morgens sind die Daten von "heute" noch unvollständig!
-        # Wir wollen GESTERN (vollständig) und VORGESTERN (zum Vergleich)
-        # Also: Zuerst einen Tag zurück navigieren!
-
-        print("\n→ Navigiere zu GESTERN (für vollständige Daten)...")
+        # Navigiere zu GESTERN (vollständige Daten)
+        print("\n→ Navigiere zu GESTERN...")
         if not navigate_to_previous_day(page):
             print("⚠ Navigation zu gestern fehlgeschlagen")
         time.sleep(3)
 
-        print(f"\n→ Sammle Daten: GESTERN + VORGESTERN...\n")
+        # Sammle Daten für GESTERN und VORGESTERN
+        print(f"\n→ Sammle Daten...\n")
 
         day_labels = ["yesterday", "day_before_yesterday"]
 
         for day in range(DAYS_TO_SCRAPE):
             label = day_labels[day] if day < len(day_labels) else f"day_{day}"
-            print(f"=== {label.upper()} ({day + 1}/{DAYS_TO_SCRAPE}) ===")
+            print(f"=== {label.upper()} ===")
 
             current_date = get_current_date_from_page(page)
             glucose = scrape_glucose_data(page)
-            insulin = scrape_insulin_data(page)
 
             day_data = {
                 'date': current_date,
                 'label': label,
-                'day_index': day,
-                'glucose': glucose,
-                'insulin': insulin,
+                'tir': glucose.get('time_in_range', ''),
+                'cv': glucose.get('cv', ''),
                 'scraped_at': datetime.now().isoformat()
             }
 
@@ -565,13 +561,30 @@ def main():
 
         browser.close()
     
+    # JSON speichern
     output_file = "glooko_data.json"
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(all_data, f, indent=2, ensure_ascii=False)
-    
-    print(f"✓✓✓ {len(all_data)} Tage gescraped!")
-    print(f"✓ Daten gespeichert in: {output_file}")
-    
+
+    # CSV-Tabelle speichern
+    csv_file = "glooko_data.csv"
+    with open(csv_file, 'w', encoding='utf-8') as f:
+        f.write("Datum,Label,TIR (%),CV (%),Gescraped am\n")
+        for entry in all_data:
+            f.write(f"{entry['date']},{entry['label']},{entry['tir']},{entry['cv']},{entry['scraped_at']}\n")
+
+    print(f"\n✓✓✓ {len(all_data)} Tage gescraped!")
+    print(f"✓ JSON: {output_file}")
+    print(f"✓ CSV:  {csv_file}")
+
+    # Tabelle anzeigen
+    print("\n┌─────────────────────────┬───────────┬───────────┐")
+    print("│ Datum                   │ TIR (%)   │ CV (%)    │")
+    print("├─────────────────────────┼───────────┼───────────┤")
+    for entry in all_data:
+        print(f"│ {entry['date']:<23} │ {entry['tir']:>9} │ {entry['cv']:>9} │")
+    print("└─────────────────────────┴───────────┴───────────┘")
+
     return True
 
 if __name__ == "__main__":
