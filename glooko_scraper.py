@@ -215,6 +215,16 @@ def scrape_glooko():
             page.goto(GLOOKO_URL, wait_until="domcontentloaded")
             page.wait_for_timeout(3000)
 
+            # Cookie-Banner auf Login-Seite schließen
+            try:
+                cookie_btn = page.locator('button:has-text("Alle ablehnen"), button:has-text("Reject All"), button#onetrust-reject-all-handler').first
+                if cookie_btn.is_visible(timeout=5000):
+                    cookie_btn.click()
+                    page.wait_for_timeout(1000)
+                    print("Cookie-Banner auf Login-Seite geschlossen")
+            except:
+                pass
+
             print("Gebe Anmeldedaten ein...")
             email_field = page.locator('input[type="email"], input[name="user[email]"], input[placeholder*="mail" i]').first
             email_field.fill(GLOOKO_EMAIL)
