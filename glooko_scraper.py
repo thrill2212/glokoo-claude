@@ -290,7 +290,6 @@ def scrape_glooko():
             # Warte auf Daten-Aktualisierung
             print("Warte 10 Sekunden auf Daten-Aktualisierung...")
             page.wait_for_timeout(10000)
-            page.wait_for_load_state("networkidle")
 
             # Full-page Screenshot
             SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
