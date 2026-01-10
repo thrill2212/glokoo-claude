@@ -246,15 +246,30 @@ def scrape_glooko():
             except:
                 pass
 
-            # Zeitraum auf "1 Tag" wechseln
+            # Zeitraum auf "1 Tag" wechseln (falls nicht bereits ausgewählt)
             print("Wechsle Zeitraum auf '1 Tag'...")
-            zeitraum_dropdown = page.locator('select, [class*="dropdown"], [class*="select"]').filter(has_text="Wochen").first
-            zeitraum_dropdown.click()
-            page.wait_for_timeout(500)
-            tag_option = page.locator('option:has-text("1 Tag"), li:has-text("1 Tag"), [role="option"]:has-text("1 Tag")').first
-            tag_option.click()
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(2000)
+            try:
+                # Prüfe ob "1 Tag" bereits ausgewählt ist
+                current_zeitraum = page.locator('text="Zeitraum:"').locator('xpath=following-sibling::*[1]').text_content()
+                if "1 Tag" in current_zeitraum:
+                    print("Zeitraum ist bereits '1 Tag'")
+                else:
+                    zeitraum_dropdown = page.locator('[class*="dropdown"], [class*="select"]').filter(has_text="Wochen").first
+                    zeitraum_dropdown.click()
+                    page.wait_for_timeout(500)
+                    tag_option = page.locator('option:has-text("1 Tag"), li:has-text("1 Tag"), [role="option"]:has-text("1 Tag")').first
+                    tag_option.click()
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(2000)
+            except:
+                # Fallback: Klicke direkt auf den Zeitraum-Bereich
+                zeitraum_dropdown = page.locator('text="Zeitraum:"').locator('xpath=following-sibling::*[1]').first
+                zeitraum_dropdown.click()
+                page.wait_for_timeout(500)
+                tag_option = page.locator('text="1 Tag"').first
+                tag_option.click()
+                page.wait_for_timeout(2000)
+            print("Zeitraum auf '1 Tag' gesetzt")
 
             # Zum gestrigen Tag navigieren
             print("Navigiere zum gestrigen Tag...")
