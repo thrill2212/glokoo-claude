@@ -27,14 +27,21 @@ WOCHENTAGE = {
 }
 
 
-def read_data_for_dates(target_date, previous_date):
-    """Liest die Daten für spezifische Daten aus der CSV."""
+def read_all_data():
+    """Liest alle Daten aus der CSV."""
     if not CSV_FILE.exists():
         print("ERROR: CSV-Datei nicht gefunden")
-        return None, None
+        return []
 
     with open(CSV_FILE, 'r', encoding='utf-8') as f:
         reader = list(csv.DictReader(f))
+
+    return reader
+
+
+def read_data_for_dates(target_date, previous_date):
+    """Liest die Daten für spezifische Daten aus der CSV."""
+    reader = read_all_data()
 
     if len(reader) < 1:
         print("ERROR: Keine Daten in CSV")
@@ -47,6 +54,31 @@ def read_data_for_dates(target_date, previous_date):
     previous_data = data_by_date.get(previous_date)
 
     return target_data, previous_data
+
+
+def check_best_values(gestern_data, all_data):
+    """Prüft ob gestern Bestwerte erreicht wurden (nur bei >= 10 Tagen Daten)."""
+    if len(all_data) < 10:
+        return None, None
+
+    gestern_zielbereich = float(gestern_data['zielbereich_pct'])
+    gestern_cv = float(gestern_data['cv_pct'])
+
+    # Finde beste Werte aller Tage (außer gestern)
+    andere_tage = [row for row in all_data if row['datum'] != gestern_data['datum']]
+
+    if not andere_tage:
+        return None, None
+
+    # Höchster Zielbereich = bester
+    max_zielbereich = max(float(row['zielbereich_pct']) for row in andere_tage)
+    ist_bester_zielbereich = gestern_zielbereich > max_zielbereich
+
+    # Niedrigster CV = bester (stabiler)
+    min_cv = min(float(row['cv_pct']) for row in andere_tage)
+    ist_bester_cv = gestern_cv < min_cv
+
+    return ist_bester_zielbereich, ist_bester_cv
 
 
 def get_trend_arrow(current, previous):
@@ -68,7 +100,7 @@ def get_trend_arrow(current, previous):
         return ""
 
 
-def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell):
+def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, bester_zielbereich=None, bester_cv=None):
     """Formatiert die Telegram-Nachricht."""
 
     # Wenn keine Daten für gestern verfügbar
@@ -106,6 +138,17 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell):
 <b>{zielbereich}%{zielbereich_trend} Blutzucker im Idealbereich</b>
 {cv}%{cv_trend} Glukose-Stabilität"""
 
+    # Glückwunsch bei Bestwerten hinzufügen
+    if bester_zielbereich or bester_cv:
+        message += "\n"
+
+        if bester_zielbereich and bester_cv:
+            message += "\n🎉 <b>Glückwunsch!</b> Bestwerte bei Idealbereich und Stabilität!"
+        elif bester_zielbereich:
+            message += "\n🎉 <b>Glückwunsch!</b> Bestwert beim Blutzucker im Idealbereich!"
+        elif bester_cv:
+            message += "\n🎉 <b>Glückwunsch!</b> Bestwert bei der Glukose-Stabilität!"
+
     return message
 
 
@@ -138,6 +181,10 @@ def main():
     """Hauptfunktion."""
     print("Lese Daten aus CSV...")
 
+    # Alle Daten laden für Bestwert-Prüfung
+    all_data = read_all_data()
+    print(f"Insgesamt {len(all_data)} Tage in der Datenbank")
+
     # Berechne erwartete Daten (gestern und vorgestern)
     heute = datetime.now()
     gestern_datum = (heute - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -163,8 +210,24 @@ def main():
     else:
         print(f"  Vergleichs-Datum: {vorgestern_datum} ✗ (kein Trend-Vergleich)")
 
+    # Prüfe auf Bestwerte (nur wenn gestern_data vorhanden und >= 10 Tage Daten)
+    bester_zielbereich = None
+    bester_cv = None
+
+    if gestern_data and len(all_data) >= 10:
+        print(f"\nPrüfe Bestwerte (>= 10 Tage Daten vorhanden)...")
+        bester_zielbereich, bester_cv = check_best_values(gestern_data, all_data)
+        if bester_zielbereich:
+            print("  🎉 Bestwert beim Idealbereich!")
+        if bester_cv:
+            print("  🎉 Bestwert bei der Stabilität!")
+        if not bester_zielbereich and not bester_cv:
+            print("  Keine Bestwerte heute")
+    elif len(all_data) < 10:
+        print(f"\nBestwert-Prüfung übersprungen (erst {len(all_data)} von 10 benötigten Tagen)")
+
     print("\nErstelle Nachricht...")
-    message = format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell)
+    message = format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, bester_zielbereich, bester_cv)
 
     print("\n--- Nachricht ---")
     print(message)
