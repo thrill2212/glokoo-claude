@@ -71,6 +71,18 @@ def get_trend_arrow(current, previous):
 def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell):
     """Formatiert die Telegram-Nachricht."""
 
+    # Wenn keine Daten für gestern verfügbar
+    if not ist_aktuell or not gestern_data:
+        heute = datetime.now()
+        gestern = heute - timedelta(days=1)
+        wochentag = WOCHENTAGE[gestern.weekday()]
+        datum_str = gestern.strftime("%d.%m.%Y")
+
+        message = f"""📊 {wochentag}, {datum_str}
+
+<b>Daten nicht verfügbar</b>"""
+        return message
+
     # Datum parsen
     datum = datetime.strptime(gestern_data['datum'], "%Y-%m-%d")
     wochentag = WOCHENTAGE[datum.weekday()]
@@ -80,7 +92,7 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell):
     zielbereich = round(float(gestern_data['zielbereich_pct']))
     cv = round(float(gestern_data['cv_pct']))
 
-    # Trends berechnen
+    # Trends nur wenn Vorgestern-Daten verfügbar
     zielbereich_trend = ""
     cv_trend = ""
 
@@ -93,10 +105,6 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell):
 
 <b>{zielbereich}%{zielbereich_trend} Blutzucker im Idealbereich</b>
 {cv}%{cv_trend} Glukose-Stabilität"""
-
-    # Warnung hinzufügen, wenn Daten nicht aktuell sind
-    if not ist_aktuell:
-        message += f"\n\n⚠️ <i>Achtung: Daten sind nicht von gestern ({gestern_datum})</i>"
 
     return message
 
@@ -139,32 +147,21 @@ def main():
     print(f"  Gestern: {gestern_datum}")
     print(f"  Vorgestern: {vorgestern_datum}")
 
-    # Versuche erst die aktuellen Daten zu laden
+    # Versuche die Daten für gestern und vorgestern zu laden
     gestern_data, vorgestern_data = read_data_for_dates(gestern_datum, vorgestern_datum)
 
-    ist_aktuell = True
-
-    # Wenn keine Daten für gestern, nimm die neuesten verfügbaren
-    if not gestern_data:
-        print(f"⚠️  Keine Daten für {gestern_datum} gefunden, verwende neueste verfügbare Daten")
-        ist_aktuell = False
-
-        with open(CSV_FILE, 'r', encoding='utf-8') as f:
-            reader = list(csv.DictReader(f))
-
-        if len(reader) < 1:
-            print("ERROR: Keine Daten in CSV")
-            return False
-
-        # Sortiere nach Datum absteigend
-        reader.sort(key=lambda x: x['datum'], reverse=True)
-        gestern_data = reader[0]
-        vorgestern_data = reader[1] if len(reader) >= 2 else None
+    ist_aktuell = gestern_data is not None
 
     print(f"\nVerwende Daten:")
-    print(f"  Haupt-Datum: {gestern_data['datum']} {'✓' if ist_aktuell else '(nicht aktuell)'}")
+    if gestern_data:
+        print(f"  Haupt-Datum: {gestern_data['datum']} ✓")
+    else:
+        print(f"  Haupt-Datum: {gestern_datum} ✗ (nicht verfügbar)")
+
     if vorgestern_data:
-        print(f"  Vergleichs-Datum: {vorgestern_data['datum']}")
+        print(f"  Vergleichs-Datum: {vorgestern_data['datum']} ✓")
+    else:
+        print(f"  Vergleichs-Datum: {vorgestern_datum} ✗ (kein Trend-Vergleich)")
 
     print("\nErstelle Nachricht...")
     message = format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell)
