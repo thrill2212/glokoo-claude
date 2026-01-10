@@ -8,6 +8,9 @@ on:
   # Manueller Trigger zum Testen
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   scrape-and-send:
     runs-on: ubuntu-latest
