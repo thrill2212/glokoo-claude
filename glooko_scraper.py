@@ -7,7 +7,7 @@ Scrapes diabetes data from Glooko dashboard and saves to CSV.
 import os
 import sys
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
@@ -303,6 +303,12 @@ def scrape_glooko():
             print("\n=== EXTRAHIERTE DATEN ===")
             for key, value in data.items():
                 print(f"  {key}: {value}")
+
+            # Validiere, dass das Datum wirklich "gestern" ist
+            gestern = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            if data['datum'] != gestern:
+                print(f"\n⚠️  WARNUNG: Extrahiertes Datum ({data['datum']}) ist nicht gestern ({gestern})")
+                print("    Die Daten werden trotzdem gespeichert, aber bitte prüfen!")
 
             # In CSV speichern
             print("\nSpeichere in CSV...")
