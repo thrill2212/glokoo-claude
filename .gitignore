@@ -1,0 +1,14 @@
+# Secrets (niemals committen!)
+secrets.txt
+
+# Screenshots (nur lokal)
+screenshots/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

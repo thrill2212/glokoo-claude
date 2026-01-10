@@ -1,62 +1,67 @@
-name: Daily Glooko Scraper
+name: Täglicher Diabetes-Report
 
 on:
   schedule:
-    # Täglich um 22:50 Uhr UTC = 23:50 MEZ (Winter) / 00:50 MESZ (Sommer)
-    - cron: '50 22 * * *'
-  
+    # Jeden Tag um 08:00 Uhr MEZ (07:00 UTC im Winter, 06:00 UTC im Sommer)
+    - cron: '0 7 * * *'
+
   # Manueller Trigger zum Testen
   workflow_dispatch:
 
 jobs:
   scrape-and-send:
     runs-on: ubuntu-latest
-    
+
     steps:
     # Repository Code laden
     - name: Checkout Repository
       uses: actions/checkout@v4
-    
+
     # Python einrichten
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
+
     # Python-Pakete installieren
     - name: Install Dependencies
       run: |
         pip install playwright requests
         playwright install chromium
         playwright install-deps
-    
+
     # Glooko Dashboard scrapen
     - name: Scrape Glooko Dashboard
       env:
         GLOOKO_EMAIL: ${{ secrets.GLOOKO_EMAIL }}
         GLOOKO_PASSWORD: ${{ secrets.GLOOKO_PASSWORD }}
+      run: python glooko_scraper.py
+
+    # CSV committen und pushen
+    - name: Commit and Push CSV
       run: |
-        python glooko_scraper.py
-      continue-on-error: true
-    
-    # Debug-Screenshots hochladen
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/diabetes_daily.csv
+        git diff --staged --quiet || git commit -m "Update diabetes data $(date +'%Y-%m-%d')"
+        git push
+
+    # Debug-Screenshots hochladen (bei Fehler)
     - name: Upload Debug Screenshots
-      if: always()
+      if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: debug-screenshots
-        path: debug_*.png
+        path: screenshots/
         if-no-files-found: ignore
-    
-    # Daten an Telegram senden
-    - name: Send Data to Telegram
-      if: success()
+
+    # Telegram-Nachricht senden
+    - name: Send Telegram Report
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      run: |
-        python send_to_telegram.py
-    
+      run: python send_telegram.py
+
     # Bei Fehler Benachrichtigung senden
     - name: Notify on Failure
       if: failure()
