@@ -149,14 +149,14 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
         elif bester_cv:
             message += "\n🎉 <b>Glückwunsch!</b> Bestwert bei der Glukose-Stabilität!"
 
-    # Motivierende Nachricht bei guten Werten (CV < 36% oder Zielbereich > 70%)
-    if cv < 36 and zielbereich > 70:
+    # Motivierende Nachricht bei guten Werten (CV < 36% oder Zielbereich >= 80%)
+    if cv < 36 and zielbereich >= 80:
         # Beide Werte gut
         message += f"\n\n💪 Weiter so! Deine Glukose-Stabilität bei {cv}% und dein Blutzucker im Idealbereich bei {zielbereich}% sahen gestern richtig gut aus. Versuche es heute erneut!"
     elif cv < 36:
         # Nur CV gut
         message += f"\n\n💪 Weiter so! Deine Glukose-Stabilität bei {cv}% sah gestern richtig gut aus. Versuche es heute erneut!"
-    elif zielbereich > 70:
+    elif zielbereich >= 80:
         # Nur Zielbereich gut
         message += f"\n\n💪 Weiter so! Dein Blutzucker im Idealbereich bei {zielbereich}% sah gestern richtig gut aus. Versuche es heute erneut!"
 
