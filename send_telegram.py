@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Configuration
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+TELEGRAM_CHAT_IDS = os.environ.get("TELEGRAM_CHAT_ID", "").split(",")  # Komma-getrennte Liste
 CSV_FILE = Path(__file__).parent / "data" / "diabetes_daily.csv"
 
 # Wochentage auf Deutsch
@@ -149,32 +149,54 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
         elif bester_cv:
             message += "\n🎉 <b>Glückwunsch!</b> Bestwert bei der Glukose-Stabilität!"
 
+    # Motivierende Nachricht bei guten Werten (CV < 36% oder Zielbereich > 70%)
+    if cv < 36 and zielbereich > 70:
+        # Beide Werte gut
+        message += f"\n\n💪 Weiter so! Deine Glukose-Stabilität bei {cv}% und dein Blutzucker im Idealbereich bei {zielbereich}% sahen gestern richtig gut aus. Versuche es heute erneut!"
+    elif cv < 36:
+        # Nur CV gut
+        message += f"\n\n💪 Weiter so! Deine Glukose-Stabilität bei {cv}% sah gestern richtig gut aus. Versuche es heute erneut!"
+    elif zielbereich > 70:
+        # Nur Zielbereich gut
+        message += f"\n\n💪 Weiter so! Dein Blutzucker im Idealbereich bei {zielbereich}% sah gestern richtig gut aus. Versuche es heute erneut!"
+
     return message
 
 
 def send_telegram(message):
-    """Sendet die Nachricht via Telegram."""
+    """Sendet die Nachricht via Telegram an alle Chat-IDs."""
 
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_IDS:
         print("ERROR: TELEGRAM_BOT_TOKEN und TELEGRAM_CHAT_ID erforderlich")
         return False
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": message,
-        "parse_mode": "HTML"
-    }
+    success_count = 0
+    error_count = 0
 
-    response = requests.post(url, json=payload)
+    for chat_id in TELEGRAM_CHAT_IDS:
+        chat_id = chat_id.strip()  # Leerzeichen entfernen
+        if not chat_id:
+            continue
 
-    if response.status_code == 200:
-        print("Nachricht erfolgreich gesendet!")
-        return True
-    else:
-        print(f"ERROR: {response.status_code} - {response.text}")
-        return False
+        payload = {
+            "chat_id": chat_id,
+            "text": message,
+            "parse_mode": "HTML"
+        }
+
+        response = requests.post(url, json=payload)
+
+        if response.status_code == 200:
+            print(f"✓ Nachricht an Chat-ID {chat_id} gesendet")
+            success_count += 1
+        else:
+            print(f"✗ Fehler bei Chat-ID {chat_id}: {response.status_code} - {response.text}")
+            error_count += 1
+
+    print(f"\nErgebnis: {success_count} erfolgreich, {error_count} Fehler")
+    return success_count > 0
 
 
 def main():
