@@ -208,19 +208,15 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
     zielbereich = round(float(gestern_data['zielbereich_pct']))
     cv = round(float(gestern_data['cv_pct']))
 
-    # Trends nur wenn Vorgestern-Daten verfügbar
-    zielbereich_trend = ""
-    cv_trend = ""
-
-    if vorgestern_data:
-        zielbereich_trend = f" ({get_trend_arrow(gestern_data['zielbereich_pct'], vorgestern_data['zielbereich_pct'])})"
-        cv_trend = f" ({get_trend_arrow(gestern_data['cv_pct'], vorgestern_data['cv_pct'])})"
+    # Sterne für gute Werte (Zielbereich >= 80%, CV < 36%)
+    zielbereich_stern = " ⭐" if zielbereich >= 80 else ""
+    cv_stern = " ⭐" if cv < 36 else ""
 
     # Nachricht zusammenbauen
     message = f"""📊 {wochentag}, {datum_str}
 
-<b>{zielbereich}%{zielbereich_trend} Blutzucker im Idealbereich</b>
-{cv}%{cv_trend} Glukose-Stabilität"""
+<b>{zielbereich}% Blutzucker im Idealbereich{zielbereich_stern}</b>
+{cv}% Glukose-Stabilität{cv_stern}"""
 
     # Glückwunsch bei Bestwerten hinzufügen
     if bester_zielbereich or bester_cv:
