@@ -208,9 +208,9 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
     zielbereich = round(float(gestern_data['zielbereich_pct']))
     cv = round(float(gestern_data['cv_pct']))
 
-    # Sterne für gute Werte (Zielbereich >= 80%, CV < 36%)
+    # Sterne für gute Werte (Zielbereich >= 80%, CV < 36% nur wenn Zielbereich auch gut)
     zielbereich_stern = " ⭐" if zielbereich >= 80 else ""
-    cv_stern = " ⭐" if cv < 36 else ""
+    cv_stern = " ⭐" if cv < 36 and zielbereich >= 80 else ""
 
     # Nachricht zusammenbauen
     message = f"""📊 {wochentag}, {datum_str}
