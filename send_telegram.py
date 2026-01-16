@@ -18,7 +18,7 @@ CSV_FILE = Path(__file__).parent / "data" / "diabetes_daily.csv"
 STREAK_FILE = Path(__file__).parent / "data" / "streak.json"
 
 # Streak-Schwellwert
-STREAK_THRESHOLD = 80  # Zielbereich muss >= 80% sein für Streak
+STREAK_THRESHOLD = 70  # Zielbereich muss >= 70% sein für Streak
 
 # Wochentage auf Deutsch
 WOCHENTAGE = {
