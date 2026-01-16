@@ -215,7 +215,7 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
     # Nachricht zusammenbauen
     message = f"""📊 {wochentag}, {datum_str}
 
-<b>{zielbereich}% Blutzucker im Idealbereich{zielbereich_stern}</b>
+<b>{zielbereich}% Blutzucker im Idealbereich (TIR){zielbereich_stern}</b>
 {cv}% Blutzucker-Stabilität (CV){cv_stern}"""
 
     # Glückwunsch bei Bestwerten hinzufügen
@@ -225,7 +225,7 @@ def format_message(gestern_data, vorgestern_data, gestern_datum, ist_aktuell, be
         if bester_zielbereich and bester_cv:
             message += "\n🎉 <b>Glückwunsch!</b> Bestwerte bei Idealbereich und Stabilität!"
         elif bester_zielbereich:
-            message += "\n🎉 <b>Glückwunsch!</b> Bestwert beim Blutzucker im Idealbereich!"
+            message += "\n🎉 <b>Glückwunsch!</b> Bestwert beim Blutzucker im Idealbereich (TIR)!"
         elif bester_cv:
             message += "\n🎉 <b>Glückwunsch!</b> Bestwert bei der Blutzucker-Stabilität!"
 
