@@ -154,15 +154,7 @@ def update_streak(zielbereich, datum):
 
 def get_streak_message(current_streak, streak_gebrochen, alte_streak):
     """Erstellt die Streak-Nachricht basierend auf dem aktuellen Status."""
-    if streak_gebrochen:
-        # Streak wurde gebrochen
-        if alte_streak >= 7:
-            return f"\n\n💔 Streak beendet nach {alte_streak} Tagen. Morgen neu starten!"
-        elif alte_streak > 0:
-            return f"\n\n💔 Streak beendet nach {alte_streak} Tag{'en' if alte_streak > 1 else ''}. Morgen neu starten!"
-        return ""
-
-    if current_streak == 0:
+    if streak_gebrochen or current_streak == 0:
         return ""
 
     # Meilensteine prüfen
