@@ -8,6 +8,38 @@ Automatischer Scraper, der täglich Diabetes-Daten aus dem [Glooko](https://www.
 2. **Telegram-Report** (`send_telegram.py`) — Erstellt eine kompakte Tagesübersicht mit Zielbereich (TIR), CV, Streak-Tracking und Bestwert-Erkennung und sendet sie via Telegram
 3. **GitHub Action** (`.github/workflows/daily.yml`) — Läuft täglich um 08:00 MEZ, führt beides aus und committet die CSV-Daten zurück ins Repository
 
+## Beispiel-Nachrichten
+
+**Normaler Tag:**
+```
+📊 Mittwoch, 19.02.2026
+
+69% Blutzucker im Idealbereich (TIR)
+39% Blutzucker-Stabilität (CV)
+```
+
+**Guter Tag (TIR >= 80%, CV < 36%):**
+```
+📊 Samstag, 15.02.2026
+
+88% Blutzucker im Idealbereich (TIR) ⭐
+31% Blutzucker-Stabilität (CV) ⭐
+
+🔥 5 Tage in Folge über 70%!
+```
+
+**Bestwert erreicht:**
+```
+📊 Sonntag, 12.01.2026
+
+92% Blutzucker im Idealbereich (TIR) ⭐
+22% Blutzucker-Stabilität (CV) ⭐
+
+🎉 Glückwunsch! Bestwerte bei Idealbereich und Stabilität!
+
+🔥🔥 7 Tage in Folge über 70%! Eine ganze Woche!
+```
+
 ## Erfasste Werte
 
 | Wert | Beschreibung |
