@@ -217,7 +217,7 @@ def scrape_glooko():
 
             # Cookie-Banner auf Login-Seite schließen
             try:
-                cookie_btn = page.locator('button:has-text("Alle ablehnen"), button:has-text("Reject All"), button#onetrust-reject-all-handler').first
+                cookie_btn = page.locator('button:has-text("Alle ablehnen"), button:has-text("Reject All"), button#onetrust-reject-all-handler, button:has-text("Cookies akzeptieren"), [aria-label="Schließen"], [aria-label="Close"]').first
                 if cookie_btn.is_visible(timeout=5000):
                     cookie_btn.click()
                     page.wait_for_timeout(1000)
@@ -235,11 +235,46 @@ def scrape_glooko():
 
             page.wait_for_load_state("domcontentloaded", timeout=30000)
             page.wait_for_timeout(5000)
+
+            # Prüfe ob Login fehlgeschlagen ist
+            error_selectors = [
+                'text="Ungültiges Kennwort"',
+                'text="ungültige E-Mail"',
+                'text="Invalid password"',
+                'text="Invalid email"',
+                '[class*="error"]',
+                '[class*="alert-danger"]',
+            ]
+            for selector in error_selectors:
+                try:
+                    error_el = page.locator(selector).first
+                    if error_el.is_visible(timeout=1000):
+                        error_text = error_el.text_content()
+                        print(f"LOGIN FEHLGESCHLAGEN: {error_text}")
+                        SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+                        page.screenshot(path=str(SCREENSHOTS_DIR / "debug_login_failed.png"))
+                        print("FEHLER: Bitte GLOOKO_PASSWORD in den GitHub Secrets aktualisieren!")
+                        sys.exit(1)
+                except:
+                    pass
+
+            # Prüfe ob wir noch auf der Login-Seite sind (Login-Formular sichtbar = nicht eingeloggt)
+            try:
+                still_login = page.locator('input[type="password"]').first
+                if still_login.is_visible(timeout=2000):
+                    print("LOGIN FEHLGESCHLAGEN: Noch auf der Login-Seite")
+                    SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+                    page.screenshot(path=str(SCREENSHOTS_DIR / "debug_login_failed.png"))
+                    print("FEHLER: Bitte GLOOKO_EMAIL und GLOOKO_PASSWORD in den GitHub Secrets prüfen!")
+                    sys.exit(1)
+            except:
+                pass
+
             print("LOGIN ERFOLGREICH!")
 
             # Cookie-Banner schließen
             try:
-                cookie_btn = page.locator('button:has-text("Alle ablehnen")').first
+                cookie_btn = page.locator('button:has-text("Alle ablehnen"), button:has-text("Cookies akzeptieren"), [aria-label="Schließen"], [aria-label="Close"]').first
                 if cookie_btn.is_visible(timeout=2000):
                     cookie_btn.click()
                     page.wait_for_timeout(1000)
