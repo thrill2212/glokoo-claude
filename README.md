@@ -62,7 +62,15 @@ Automatischer Scraper, der täglich Diabetes-Daten aus dem [Glooko](https://www.
 
 ## Setup
 
-### 1. GitHub Secrets konfigurieren
+### 1. Telegram-Bot erstellen
+
+1. In Telegram den [@BotFather](https://t.me/BotFather) öffnen und `/newbot` senden
+2. Einen Namen und Benutzernamen für den Bot vergeben
+3. Den **Bot-Token** kopieren und als `TELEGRAM_BOT_TOKEN` Secret speichern
+4. Den Bot in Telegram öffnen und `/start` senden
+5. Die eigene **Chat-ID** herausfinden, z.B. über [@userinfobot](https://t.me/userinfobot), und als `TELEGRAM_CHAT_ID` Secret speichern
+
+### 2. GitHub Secrets konfigurieren
 
 Im Repository unter **Settings > Secrets and variables > Actions** folgende Secrets anlegen:
 
@@ -73,11 +81,11 @@ Im Repository unter **Settings > Secrets and variables > Actions** folgende Secr
 | `TELEGRAM_BOT_TOKEN` | Token des Telegram-Bots (via [@BotFather](https://t.me/BotFather)) |
 | `TELEGRAM_CHAT_ID` | Chat-ID(s) für den Empfang, kommagetrennt für mehrere Empfänger |
 
-### 2. Manuell testen
+### 3. Manuell testen
 
 Die Action kann unter **Actions > Täglicher Diabetes-Report > Run workflow** manuell ausgelöst werden.
 
-### 3. Lokal ausführen
+### 4. Lokal ausführen
 
 ```bash
 pip install playwright requests
